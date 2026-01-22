@@ -1,0 +1,298 @@
+SELECT * FROM olympics.laptops;
+
+CREATE table laptop_backup LIKE laptops;
+
+INSERT INTO laptop_backup 
+SELECT *
+FROM laptops;
+
+SELECT * FROM laptop_backup;
+
+SELECT *
+FROM laptops;
+
+SELECT * FROM information_schema.Tables
+WHERE table_schema = 'olympics'
+AND table_name = 'laptops';
+
+SELECT Data_length/1024 FROM information_schema.Tables
+WHERE table_schema = 'olympics'
+AND table_name = 'laptops';
+
+
+SELECT *
+FROM laptops;
+
+ALTER table laptops
+ADD COLUMN id int auto_increment primary key first;
+
+SELECT *
+FROM laptops;
+
+DELETE FROM laptops
+WHERE id IN (
+SELECT id FROM (
+SELECT id
+        FROM laptops
+        WHERE `Index` IS NULL
+          AND Company IS NULL
+          AND TypeName IS NULL
+          AND Inches IS NULL
+          AND ScreenResolution IS NULL
+          AND Cpu IS NULL
+          AND Ram IS NULL
+          AND Memory IS NULL
+          AND Gpu IS NULL
+          AND OpSys IS NULL
+          AND Weight IS NULL
+          AND Price IS NULL
+          ) t
+) ;
+
+SELECT *
+FROM laptops;
+
+ALTER TABLE laptops
+DROP column `Index`;
+
+SELECT *
+FROM laptops;
+
+UPDATE laptops
+SET Ram = CAST(REPLACE(Ram,'GB','') AS UNSIGNED);
+
+SELECT *
+FROM laptops;
+
+ALTER table laptops
+MODIFY column Ram INT;
+SELECT *
+FROM laptops;
+
+UPDATE laptops
+SET weight = replace(weight,'kg','');
+SELECT *
+FROM laptops;
+
+Update laptops
+set price=ROUND(price,0);
+ALTER table laptops
+MODIFY column price INT;
+SELECT *
+FROM laptops;
+
+SELECT opsys,
+CASE	
+	WHEN opsys LIKE 'windows%' THEN 'windows' 
+    WHEN opsys LIKE '%mac%' THEN 'mac'
+    WHEN opsys LIKE'%linux%' THEN 'linux'
+    WHEN opsys LIKE 'No OS' THEN 'N/A'
+    ELSE 'others'
+END AS 'os_brand'
+FROM laptops;
+
+UPDATE laptops
+SET opsys = CASE	
+	WHEN opsys LIKE 'windows%' THEN 'windows' 
+    WHEN opsys LIKE '%mac%' THEN 'mac'
+    WHEN opsys LIKE'%linux%' THEN 'linux'
+    WHEN opsys LIKE 'No OS' THEN 'N/A'
+    ELSE 'others'
+END;
+
+SELECT * FROM laptops;
+
+ALTER TABLE laptops
+ADD column gpu_brand VARCHAR(255) after gpu,
+ADD column gpu_name VARCHAR(255) after gpu_brand;
+
+
+select * from laptops;
+
+UPDATE laptops
+SET gpu_brand= substring_index(gpu,' ',1);
+
+SELECT *
+FROM laptops;
+
+SELECT REPLACE(gpu,gpu_brand,'')
+FROM laptops;
+
+UPDATE laptops
+SET gpu_name = REPLACE(gpu,gpu_brand,'');
+
+SELECT *
+FROM laptops;
+
+ALTER TABLE laptops
+DROP column gpu;
+
+SELECT * FROM laptops;
+
+ALTER TABLE laptops
+ADD column cpu_brand varchar(255) after cpu,
+ADD column cpu_name varchar(255) after  cpu_brand,
+ADD column cpu_speed varchar(255) after cpu_name;
+
+SELECT *
+FROM laptops;
+
+Update laptops
+SET cpu_brand = substring_index(cpu,' ',1);
+
+SELECT * FROM laptops;
+
+SELECT cpu,CAST(REPLACE(substring_index(cpu,' ',-1),'GHz','')AS DECIMAL (10,2))
+FROM laptops;
+
+UPDATE laptops
+SET cpu_speed= CAST(REPLACE(substring_index(cpu,' ',-1),'GHz','')AS DECIMAL (10,2));
+
+SELECT *
+FROM laptops;
+
+SELECT cpu,REPLACE((REPLACE(cpu,substring_index(cpu,' ',1),'')),(substring_index(cpu,' ',-1)),'')
+FROM laptops;
+
+SELECT *
+FROM laptops;
+
+update laptops
+SET cpu_name = REPLACE((REPLACE(cpu,substring_index(cpu,' ',1),'')),(substring_index(cpu,' ',-1)),'');
+
+SELECT *
+FROM laptops;
+
+ALTER TABLE laptops
+DROP column cpu;
+
+SELECT *
+From laptops;
+
+ALTER TABLE laptops
+ADD column resolution_height int after screenresolution,
+ADD column resolution_width int after resolution_height,
+ADD column touchscreen int after resolution_width;
+
+SELECT * FROM laptops;
+
+SELECT screenresolution,
+substring_index(screenresolution,' ',-1),
+substring_index(substring_index(screenresolution,' ',-1),'x',1),
+substring_index(substring_index(screenresolution,' ',-1),'x',-1)
+FROM laptops;
+
+Update laptops
+set resolution_height=substring_index(substring_index(screenresolution,' ',-1),'x',1),
+resolution_width = substring_index(substring_index(screenresolution,' ',-1),'x',-1);
+
+
+SELECT * FROM laptops;
+
+SELECT screenresolution,
+CASE 
+	when screenresolution LIKE '%touch%' THEN 1 ELSE 0
+END 
+FROM laptops;
+
+
+update laptops
+set touchscreen = CASE 
+	when screenresolution LIKE '%touch%' THEN 1 ELSE 0
+END;
+
+SELECT *
+FROM laptops;
+
+alter table laptops
+DROP column ScreenResolution;
+
+SELECT * FROM laptops;
+
+SELECT cpu_name,
+substring_index(TRIM(cpu_name)," ",2) 
+from laptops;
+
+Update laptops
+set cpu_name = substring_index(TRIM(cpu_name)," ",2);
+
+SELECT * FROM laptops;
+
+ALTER table laptops
+ADD column `type` varchar(255) after memory,
+ADD column primary_storage varchar(255) after `type`,
+ADD column secondary_storage varchar(255) after primary_storage;
+
+SELECT DISTINCt memory,
+case 
+	when memory LIKE '%SSD%' and memory LIKE '%HDD%' THEN 'Hybrid'
+    when memory LIKE '%SSD%' and memory LIKE '%Hybrid%' THEN 'Hybrid'
+    when memory LIKE '%SSD%' and memory LIKE '%Flash Storage%' THEN 'Hybrid'
+    when memory LIKE '%HDD%' and memory LIKE '%Flash Storage%' THEN 'Hybrid'
+    when memory like '%SSD%' THEN 'SSD'
+    when memory like '%HDD%' THEN 'HDD'
+    when memory like '%Hybrid%' THEN 'Hybrid'
+    when memory like '%Flash Storage%' THEN 'Flash Storge'
+    ELSE 'N/A'
+end as `type`
+FROM laptops;
+
+update laptops
+set `type`=case 
+	when memory LIKE '%SSD%' and memory LIKE '%HDD%' THEN 'Hybrid'
+    when memory LIKE '%SSD%' and memory LIKE '%Hybrid%' THEN 'Hybrid'
+    when memory LIKE '%SSD%' and memory LIKE '%Flash Storage%' THEN 'Hybrid'
+    when memory LIKE '%HDD%' and memory LIKE '%Flash Storage%' THEN 'Hybrid'
+    when memory like '%SSD%' THEN 'SSD'
+    when memory like '%HDD%' THEN 'HDD'
+    when memory like '%Hybrid%' THEN 'Hybrid'
+    when memory like '%Flash Storage%' THEN 'Flash Storge'
+    ELSE 'N/A'
+end;
+
+select * from laptops;
+
+alter table laptops
+rename column `type` to memory_type;
+
+SELECT * FROM laptops;
+
+SELECT memory,
+CASE
+	WHEN regexp_substr(substring_index(memory,'+',1),'[0-9]+') <= 2 THEN regexp_substr(substring_index(memory,'+',1),'[0-9]+') * 1024
+    ELSE regexp_substr(substring_index(memory,'+',1),'[0-9]+')
+END as a,
+CASE
+	when memory LIKE '%+%' THEN regexp_substr(TRIM(substring_index(memory,'+',-1)),'[0-9]+') ELSE 0
+END as b
+from laptops;
+
+Update laptops
+SET primary_storage = CASE
+	WHEN regexp_substr(substring_index(memory,'+',1),'[0-9]+') <= 2 THEN regexp_substr(substring_index(memory,'+',1),'[0-9]+') * 1024
+    ELSE regexp_substr(substring_index(memory,'+',1),'[0-9]+')
+END;
+
+SELECT * FROM laptops;
+
+update laptops
+set secondary_storage = CASE
+	when memory LIKE '%+%' THEN regexp_substr(TRIM(substring_index(memory,'+',-1)),'[0-9]+') ELSE 0
+END;
+
+SELECT * FROM laptops;
+
+update laptops
+set secondary_storage = case 
+							when secondary_storage <=2 THEN secondary_storage *1024 ELSE secondary_storage
+						end;
+
+SELECT * FROM laptops;
+
+alter table laptops
+drop column gpu_name;
+
+SELECT * FROM laptops;
+
+
+
