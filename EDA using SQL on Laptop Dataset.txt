@@ -1,0 +1,215 @@
+SELECT * FROM olympics.laptops;
+
+
+SELECT *
+FROM laptops
+ORder by rand()
+limit 5;
+
+SELECT COUNT(*),min(price),max(price),avg(price),std(price),
+(SELECT max(price) as Q1
+FROM (select price,
+	ntile(4) over(order by price) as bucket
+from laptops) t
+where bucket=1) as Q1,
+(SELECT AVG(price) AS median
+FROM (
+    SELECT
+        price,
+        ROW_NUMBER() OVER (ORDER BY price) AS rn,
+        COUNT(*) OVER () AS cnt
+    FROM laptops
+) t
+WHERE rn IN (
+    FLOOR((cnt + 1) / 2),
+    CEIL((cnt + 1) / 2)
+) )as median,
+
+(SELECT MAX(price)
+FROM (
+  SELECT price, NTILE(4) OVER (ORDER BY price) AS q
+  FROM laptops
+) t
+WHERE q = 3) as Q3
+FROM laptops;
+
+
+SELECT price
+FROM laptops
+where price IS NULL;
+
+-- outliers --
+
+SELECT * FROM(Select *,
+(SELECT max(price) as Q1
+FROM (select price,
+	ntile(4) over(order by price) as bucket
+from laptops) t
+where bucket=1) as Q1,
+(SELECT max(price) as Q3
+FROM (select price,
+	ntile(4) over(order by price) as bucket
+from laptops) t
+where bucket=3) as Q3
+from laptops) t1
+where t1.price < t1.Q1 - (1.5 * (t1.Q3-t1.Q1)) or t1.price > t1.Q3 + (1.5 * (t1.Q3-t1.Q1));
+
+-- create histogram --
+SELECT t.budget,REPEAT('*',COUNT(*)/5) FROM (
+SELECT price,
+CASE 
+	when price between 0 and 25000 then '0-25k'
+    when price between 25001 and 50000 then '25-50k'
+    when price between 50001 and 75000 then '50-75k'
+    when price between 75001 and 100000 then '75-100k'
+    else '>100k'
+end as budget
+FROM laptops) t
+GROUP BY t.budget;
+
+--  create pie chart -- 
+select company,COUNT(*) from laptops
+GROUP BY company;
+
+
+-- numerical - numerical analysis --
+
+SELECT
+    ram,
+    COUNT(*) AS total_laptops,
+    MIN(price) AS min_price,
+    MAX(price) AS max_price,
+    AVG(price) AS avg_price,
+    STDDEV_POP(price) AS std_price,
+
+    -- Q1
+    MAX(CASE WHEN bucket = 1 THEN price END) AS Q1,
+
+    -- Median
+    AVG(CASE 
+        WHEN rn IN (
+            FLOOR((cnt + 1) / 2),
+            CEIL((cnt + 1) / 2)
+        ) THEN price 
+    END) AS median,
+
+    -- Q3
+    MAX(CASE WHEN bucket = 3 THEN price END) AS Q3
+
+FROM (
+    SELECT
+        ram,
+        price,
+        NTILE(4) OVER (PARTITION BY ram ORDER BY price) AS bucket,
+        ROW_NUMBER() OVER (PARTITION BY ram ORDER BY price) AS rn,
+        COUNT(*) OVER (PARTITION BY ram) AS cnt
+    FROM laptops
+) t
+GROUP BY ram
+ORDER BY ram;
+
+-- scatter plot in excel --
+SELECT price,cpu_speed FROM laptops;
+
+
+-- categorical table --
+-- contingency table --
+
+SELECT company,
+SUM(CASE when touchscreen = 1 then 1 else 0 end) as 'touchscreen yes',
+SUM(case when touchscreen = 0 then 1 else 0 end) as 'touchscreen no'
+FROM laptops
+GROUP BY company;
+
+SELECT * FROM laptops;
+
+
+-- categorical and numerical --
+
+select company, min(price),max(price)
+FROM laptops
+group by company;
+
+-- replacing missing value with corresponding mean value of company -- 
+UPDATE laptops l2
+JOIN (
+    SELECT company, AVG(price) AS avg_price
+    FROM laptops
+    WHERE price IS NOT NULL
+    GROUP BY company
+) l1
+ON l1.company = l2.company
+SET l2.price = l1.avg_price
+WHERE l2.price IS NULL;
+
+
+
+
+SELECT * FROM laptops;
+
+
+-- feature engineering --
+-- ppi --
+-- screen size bracket -- 
+
+alter table laptops
+add column ppi int after resolution_width;
+
+select * from laptops;
+
+SELECT round(SQRT((resolution_height * resolution_height)+(resolution_width * resolution_width))/inches) 
+from laptops;
+
+update laptops
+set ppi = round(SQRT((resolution_height * resolution_height)+(resolution_width * resolution_width))/inches)
+WHERE inches IS NOT NULL
+  AND inches <> 0;
+  
+select * from laptops;
+
+alter table laptops
+add column screen_size varchar(255) after inches;
+
+select * from laptops;
+
+update laptops
+set screen_size = case 
+	when inches <14.5 then 'small'
+    when inches >=14.5 and inches <17 then 'medium'
+    else 'large'
+end;
+
+select screen_size, avg(price) from laptops
+group by screen_size;
+
+-- one hot encoding --
+
+SELECT distinct(gpu_brand) FROM laptops;
+
+alter table laptops
+add column Intel int after gpu_brand,
+add column Amd int after Intel,
+add column nvidia int after Amd,
+add column arm int after nvidia;
+
+SELECT gpu_brand,
+CASE when gpu_brand = 'Intel' then 1 else 0 end as 'intel',
+CASE when gpu_brand = 'AMD' then 1 else 0 end as 'amd',
+CASE when gpu_brand = 'Nvidia' then 1 else 0 end as 'nvidia',
+CASE when gpu_brand = 'AMR' then 1 else 0 end as 'arm'
+from laptops;
+
+update laptops
+set intel = CASE when gpu_brand = 'Intel' then 1 else 0 end,
+amd = CASE when gpu_brand = 'AMD' then 1 else 0 end,
+nvidia = CASE when gpu_brand = 'Nvidia' then 1 else 0 end,
+arm = CASE when gpu_brand = 'ARM' then 1 else 0 end;
+
+select * From laptops;
+
+
+
+
+
+
+
